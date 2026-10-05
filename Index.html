@@ -1,0 +1,732 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>AI in Modern Education</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Layout concept: bright white 16:9 stage scaled to any screen, soft drifting colour wash behind, dot-grid paper,
+   text on the left, one animated illustrated scene with people on the right. Single light theme by design. */
+:root{
+  --bg:#FFFFFF; --ink:#14213D; --dim:#5B6684; --line:#E4E9F2;
+  --teal:14,159,142; --blue:52,102,255; --amber:240,160,20; --coral:240,103,92;
+  --tealD:7,104,92; --blueD:30,70,200; --amberD:150,96,0; --coralD:190,60,50;
+  --f-display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --f-body:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);overflow:hidden}
+body.idle{cursor:none}
+.blob{position:fixed;width:56vmax;height:56vmax;border-radius:50%;filter:blur(90px);z-index:0;transition:background-color 1.4s ease;background:rgba(14,159,142,.22)}
+.b1{left:-18vmax;top:-22vmax;animation:drift1 22s ease-in-out infinite alternate}
+.b2{right:-20vmax;bottom:-24vmax;animation:drift2 26s ease-in-out infinite alternate}
+.b3{left:38vw;top:30vh;width:34vmax;height:34vmax;opacity:.6;animation:drift3 30s ease-in-out infinite alternate}
+#viewport{position:fixed;inset:0;z-index:1;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center;overflow:hidden;
+  background-image:radial-gradient(rgba(20,33,61,.09) 1.2px,transparent 1.3px);background-size:32px 32px}
+.hdr{position:absolute;left:76px;right:76px;top:30px;display:flex;justify-content:space-between;font:500 13px var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);transition:opacity .5s;z-index:3}
+#stage[data-i="0"] .hdr{opacity:0}
+
+.slide{--rgb:var(--teal);--rgbd:var(--tealD);--acc:rgb(var(--rgb));--accd:rgb(var(--rgbd));position:absolute;inset:0;padding:78px 76px 70px;display:grid;grid-template-columns:1fr 520px;gap:36px;align-items:center;
+  opacity:0;visibility:hidden;transform:translateX(70px) scale(.985);filter:blur(8px);
+  transition:opacity .8s cubic-bezier(.22,.8,.2,1),transform .9s cubic-bezier(.22,.8,.2,1),filter .8s ease,visibility 0s linear .9s}
+.slide.active{opacity:1;visibility:visible;transform:none;filter:blur(0);transition-delay:0s}
+.slide.leaving{transform:translateX(-70px) scale(.985)}
+#stage[data-dir="back"] .slide{transform:translateX(-70px) scale(.985)}
+#stage[data-dir="back"] .slide.leaving{transform:translateX(70px) scale(.985)}
+#stage[data-dir="back"] .slide.active{transform:none}
+.s-blue{--rgb:var(--blue);--rgbd:var(--blueD)} .s-amber{--rgb:var(--amber);--rgbd:var(--amberD)} .s-coral{--rgb:var(--coral);--rgbd:var(--coralD)}
+.col{min-width:0}
+h1,h2{font-family:var(--f-display);font-weight:700;margin:0;text-wrap:balance;color:var(--ink)}
+h1{font-size:68px;line-height:1.04;letter-spacing:-.035em;font-weight:800}
+h2{font-size:62px;line-height:1.04;letter-spacing:-.03em;margin-bottom:36px}
+h2::after{content:"";display:block;width:84px;height:5px;margin-top:20px;background:var(--acc);border-radius:3px;transform-origin:left;transform:scaleX(0)}
+.active h2::after{animation:grow .9s .45s cubic-bezier(.2,.8,.2,1) both}
+.slide.leaving h2::after{animation:none;transform:none}
+.pts{list-style:none;margin:0;padding:0;display:grid;gap:20px}
+.pts li{position:relative;padding-left:38px;font-size:27px;line-height:1.32;color:var(--ink)}
+.pts li::before{content:"";position:absolute;left:2px;top:.46em;width:15px;height:15px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 5px rgba(var(--rgb),.18)}
+
+.rv,.viz{opacity:0}
+.active .rv{animation:rise .9s cubic-bezier(.2,.75,.2,1) both;animation-delay:calc(var(--d,0)*1ms + 200ms)}
+.active .viz{animation:zoomIn 1.3s cubic-bezier(.2,.8,.2,1) .25s both}
+.slide.leaving .rv,.slide.leaving .viz{animation:none;opacity:1;transform:none}
+.viz{width:520px;height:520px;justify-self:end}
+.viz svg{width:100%;height:100%;display:block;overflow:visible}
+.viz .frame{filter:drop-shadow(0 24px 40px rgba(20,33,61,.14))}
+
+.wd{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.12em;margin-right:.2em}
+.wd>span{display:inline-block;transform:translateY(108%)}
+.active .wd>span{animation:wordUp 1.05s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i)*95ms + 250ms)}
+.slide.leaving .wd>span{animation:none;transform:none}
+.hl{background:linear-gradient(transparent 62%,rgba(var(--rgb),.3) 62%)}
+.eyebrow{font:500 15px var(--f-mono);letter-spacing:.2em;text-transform:uppercase;color:var(--accd);margin-bottom:26px}
+.by{margin-top:38px;font-size:26px;line-height:1.4}
+.by b{font-weight:600}
+.by span{display:block;color:var(--dim);font-size:22px;margin-top:6px}
+.rule{width:120px;height:3px;background:linear-gradient(90deg,var(--acc),transparent);margin:32px 0 0}
+
+/* svg scene paint */
+.bd{fill:rgba(var(--rgb),.11)} .bd2{fill:rgba(var(--rgb),.18)}
+.accf{fill:var(--acc)}
+.accs{fill:none;stroke:var(--acc);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.flowp{fill:none;stroke:rgba(var(--rgb),.7);stroke-width:2.5;stroke-dasharray:2 9;stroke-linecap:round}
+.active .flowp{animation:flow 1.6s linear infinite}
+.tb{transform-box:fill-box;transform-origin:center}
+.ico{fill:none;stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.chip{fill:#fff}
+.chipsh{fill:rgba(20,33,61,.1)}
+.lap{fill:#E3E8F2;stroke:#C9D2E4;stroke-width:2}
+.white{fill:#fff;stroke:var(--line);stroke-width:1.5}
+.active .bob{animation:bob 4s ease-in-out infinite;animation-delay:calc(var(--b,0)*-1s)}
+.active .twk{animation:twinkle 2.6s ease-in-out infinite;animation-delay:calc(var(--b,0)*-1s)}
+
+/* people */
+.ppl .head{transform-box:fill-box;transform-origin:50% 95%}
+.ppl .eyes{transform-box:fill-box;transform-origin:center}
+.ppl .body{transform-box:fill-box;transform-origin:50% 100%}
+.ppl .wave{transform-box:fill-box;transform-origin:20% 100%}
+.ppl .talk{transform-box:fill-box;transform-origin:center}
+.active .ppl .head{animation:nod 5s ease-in-out infinite;animation-delay:calc(var(--pd,0)*-1s)}
+.active .ppl .eyes{animation:blink 4.6s infinite;animation-delay:calc(var(--pd,0)*-1s)}
+.active .ppl .body{animation:breathe 4s ease-in-out infinite;animation-delay:calc(var(--pd,0)*-1s)}
+.active .ppl .wave{animation:waveArm 1.5s ease-in-out infinite alternate}
+.active .ppl .talk{animation:talk .55s ease-in-out infinite alternate}
+
+/* S1 */
+.orbit{transform-origin:260px 170px}
+.active .orbit{animation:spin 14s linear infinite}
+.active .orb{animation:breathe2 3s ease-in-out infinite}
+
+/* S2 */
+.pop{transform-box:fill-box;transform-origin:0% 100%;opacity:0}
+.active .pop{animation:popMsg 9s ease-in-out infinite;animation-delay:calc(var(--d2)*1s)}
+.dotb{fill:var(--acc);transform-box:fill-box;transform-origin:center}
+.active .dotb{animation:bounce 1.2s ease-in-out infinite;animation-delay:calc(var(--j)*160ms)}
+.txl{fill:rgba(20,33,61,.35)}
+.txa{fill:rgba(var(--rgb),.55)}
+
+/* S3 */
+.rg{transform-box:fill-box;transform-origin:center}
+.active .rg{animation:ringIn .9s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--r)*160ms + 300ms)}
+.arrow{transform-origin:350px 190px}
+.active .arrow{animation:shoot 1.1s cubic-bezier(.2,.9,.25,1.1) 1.2s both,quiver 1.6s ease-out 2.3s 1}
+.active .hit{animation:hit 2.8s ease-out 2.3s infinite}
+
+/* S4 */
+.s4{grid-template-columns:1fr;align-content:center;gap:0}
+.s4 .head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:26px}
+.s4 h2{margin-bottom:0}
+.peek{width:200px;height:170px;margin-bottom:-44px;position:relative;z-index:0}
+.cards{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px;position:relative;z-index:1}
+.card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:26px 22px 26px;min-height:330px;display:flex;flex-direction:column;gap:20px;box-shadow:0 14px 34px rgba(20,33,61,.08)}
+.card .icw{width:104px;height:104px;border-radius:50%;background:rgba(var(--rgb),.13);display:grid;place-items:center;flex:none}
+.card .ic{width:76px;height:76px}
+.card p{margin:0;font-size:23px;line-height:1.32}
+.k{fill:#fff;stroke:var(--acc);stroke-width:3}
+.st{stroke:rgba(var(--rgb),.4);stroke-width:3;stroke-linecap:round}
+.active .k1{animation:slideX 3.2s ease-in-out infinite alternate}
+.active .k2{animation:slideX 2.6s ease-in-out -1s infinite alternate-reverse}
+.active .k3{animation:slideX 3.8s ease-in-out -2s infinite alternate}
+.bounce{fill:var(--acc);transform-box:fill-box;transform-origin:center}
+.active .bounce{animation:bounce 1.4s ease-in-out infinite;animation-delay:calc(var(--j)*180ms)}
+.ck{fill:none;stroke:var(--acc);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:26;stroke-dashoffset:26}
+.active .ck{animation:tick 4s ease-in-out infinite;animation-delay:calc(var(--j)*600ms)}
+.wl{stroke:rgba(var(--rgb),.75);stroke-width:3;stroke-linecap:round;transform-box:fill-box;transform-origin:left}
+.active .wl{animation:write 3.6s ease-in-out infinite;animation-delay:calc(var(--j)*500ms)}
+.sparkle{fill:rgb(var(--amber));transform-box:fill-box;transform-origin:center}
+.active .sparkle{animation:twinkle 2.4s ease-in-out infinite}
+.bar{fill:var(--acc);transform-box:fill-box;transform-origin:bottom}
+.active .bar{animation:barUp 3.4s cubic-bezier(.3,.8,.3,1) infinite;animation-delay:calc(var(--j)*220ms)}
+
+/* S5 */
+.qm{font-family:var(--f-display);font-weight:800;font-size:64px;fill:var(--acc);text-anchor:middle}
+.active .qm{animation:swapA 6s ease-in-out infinite}
+.active .bulb{animation:swapB 6s ease-in-out infinite}
+.bulb{transform-box:fill-box;transform-origin:center;opacity:0}
+.active .rays{animation:twinkle 1.4s ease-in-out infinite}
+.rays{transform-box:fill-box;transform-origin:center}
+
+/* S6 */
+.mini .head{animation-duration:6s}
+.gapq{transform-box:fill-box;transform-origin:50% 100%;opacity:0}
+.active .gapq{animation:popQ 5s ease-in-out infinite;animation-delay:calc(var(--g)*1s)}
+.beamr{fill:rgba(var(--rgb),.16)}
+.beaml{fill:rgb(var(--rgb))}
+.active .beamg{animation:sweep 5s linear infinite}
+
+/* S7 */
+.tick{stroke:rgba(20,33,61,.16);stroke-width:5;stroke-linecap:round}
+.active .tick{animation:tickLit 4.8s linear infinite;animation-delay:calc(var(--j)*200ms)}
+.night{opacity:0}
+.active .night{animation:nightFade 12s ease-in-out infinite}
+.active .skyspin{animation:spin 12s linear infinite;transform-origin:260px 260px}
+.stars{opacity:0}
+.active .stars{animation:nightFade 12s ease-in-out infinite}
+
+/* S8 */
+.shield{fill:rgba(var(--rgb),.14);stroke:var(--acc);stroke-width:4;stroke-linejoin:round}
+.scan{fill:none;stroke:rgb(var(--amber));stroke-width:6;stroke-dasharray:60 400;stroke-linecap:round}
+.active .scan{animation:dashrun 3s linear infinite}
+.pulse{fill:none;stroke:var(--acc);stroke-width:3;transform-box:fill-box;transform-origin:center;opacity:0}
+.active .pulse{animation:radar 3.6s ease-out infinite;animation-delay:calc(var(--j)*1.2s)}
+.sig{fill:var(--acc);transform-box:fill-box;transform-origin:bottom}
+.sig.off{fill:rgba(var(--rgb),.25)}
+.active .sig{animation:sigIn .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--j)*120ms + 900ms)}
+.warn{transform-box:fill-box;transform-origin:50% 100%}
+.active .warn{animation:shake 3s ease-in-out infinite}
+
+/* S9 */
+.beamg2{transform-origin:260px 150px}
+.active .beamg2{animation:sway 5.5s ease-in-out infinite alternate}
+.active .panL{animation:swayc 5.5s ease-in-out infinite alternate;transform-origin:80px 150px}
+.active .panR{animation:swayc 5.5s ease-in-out infinite alternate;transform-origin:440px 150px}
+.metal{fill:none;stroke:var(--ink);stroke-width:6;stroke-linecap:round}
+.thin{fill:none;stroke:rgba(20,33,61,.45);stroke-width:2.4}
+.pan{fill:rgba(var(--rgb),.22);stroke:var(--acc);stroke-width:4;stroke-linejoin:round}
+
+/* S10 */
+.s10{grid-template-columns:570px 1fr;gap:20px}
+.thanks{position:relative}
+.thanks .big{position:absolute;left:0;right:0;top:20px;text-align:center;font-family:var(--f-display);font-weight:800;font-size:118px;line-height:.95;letter-spacing:-.04em}
+.thanks .big span{display:block}
+.thanks .big span+span{color:var(--acc)}
+.conf{transform-box:fill-box;transform-origin:center;opacity:0}
+.active .conf{animation:fall 4.5s linear infinite;animation-delay:calc(var(--cd)*-1s)}
+
+/* chrome */
+.ui{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 20px calc(14px + env(safe-area-inset-bottom,0px));transition:opacity .4s}
+body.idle .ui{opacity:0}
+body.idle .ui:focus-within{opacity:1}
+.dots{display:flex;gap:8px;flex-wrap:wrap;min-width:0}
+.dots button{width:26px;height:6px;padding:0;border:0;border-radius:3px;background:rgba(20,33,61,.15);cursor:pointer}
+.dots button[aria-current="true"]{background:var(--ink)}
+.ctl{display:flex;align-items:center;gap:8px;font:500 13px var(--f-mono);color:var(--dim);letter-spacing:.1em}
+.ctl button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;display:grid;place-items:center;padding:0;box-shadow:0 4px 12px rgba(20,33,61,.08)}
+.ctl button:disabled{opacity:.35;cursor:default}
+.ctl svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+button:focus-visible{outline:2px solid rgb(var(--blue));outline-offset:3px}
+.ctl button.pill{width:auto;padding:0 16px 0 12px;gap:8px;display:flex;align-items:center;border-radius:19px;font:600 13px var(--f-body);letter-spacing:0;background:var(--ink);color:#fff;border-color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:72px;transform:translateX(-50%);z-index:8;max-width:min(92vw,420px);padding:12px 16px;border-radius:14px;background:var(--ink);color:#fff;font:500 14px/1.4 var(--f-body);text-align:center;box-shadow:0 12px 30px rgba(20,33,61,.25)}
+.hint{display:none}
+@media (max-aspect-ratio:1/1){.hint{display:inline}}
+.progress{position:fixed;left:0;bottom:0;height:4px;background:rgb(var(--teal));z-index:6;width:10%;transition:width .7s cubic-bezier(.2,.8,.2,1),background-color .8s}
+
+@keyframes drift1{to{transform:translate(8vmax,6vmax) scale(1.1)}}
+@keyframes drift2{to{transform:translate(-8vmax,-5vmax) scale(1.08)}}
+@keyframes drift3{to{transform:translate(-6vmax,5vmax) scale(1.2)}}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes zoomIn{from{opacity:0;transform:translateY(24px) scale(.94);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
+@keyframes wordUp{from{transform:translateY(108%)}to{transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes flow{to{stroke-dashoffset:-22}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes twinkle{0%,100%{transform:scale(.75) rotate(0);opacity:.7}50%{transform:scale(1.2) rotate(40deg);opacity:1}}
+@keyframes nod{0%,100%{transform:rotate(0)}30%{transform:rotate(2.2deg) translateY(1px)}65%{transform:rotate(-2deg)}}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.08)}}
+@keyframes breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.018)}}
+@keyframes breathe2{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes waveArm{from{transform:rotate(-14deg)}to{transform:rotate(16deg)}}
+@keyframes talk{from{transform:scaleY(.3)}to{transform:scaleY(1)}}
+@keyframes popMsg{0%{opacity:0;transform:scale(.2)}5%{opacity:1;transform:scale(1.06)}8%,86%{opacity:1;transform:scale(1)}94%,100%{opacity:0;transform:scale(1)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}40%{transform:translateY(-7px)}}
+@keyframes ringIn{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
+@keyframes shoot{from{opacity:0;transform:translate(-240px,240px)}15%{opacity:1}to{opacity:1;transform:none}}
+@keyframes quiver{0%{transform:rotate(0)}15%{transform:rotate(-3.5deg)}30%{transform:rotate(3deg)}45%{transform:rotate(-2deg)}62%{transform:rotate(1.2deg)}100%{transform:rotate(0)}}
+@keyframes hit{0%{transform:scale(1);opacity:.9}60%,100%{transform:scale(3.4);opacity:0}}
+@keyframes slideX{from{transform:translateX(-10px)}to{transform:translateX(22px)}}
+@keyframes tick{0%,8%{stroke-dashoffset:26}25%,85%{stroke-dashoffset:0}100%{stroke-dashoffset:26}}
+@keyframes write{0%,6%{transform:scaleX(.05)}35%,85%{transform:scaleX(1)}100%{transform:scaleX(.05)}}
+@keyframes barUp{0%{transform:scaleY(.1)}35%,80%{transform:scaleY(1)}100%{transform:scaleY(.1)}}
+@keyframes swapA{0%,42%{opacity:1;transform:scale(1)}50%,92%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
+@keyframes swapB{0%,44%{opacity:0;transform:scale(.3)}54%{opacity:1;transform:scale(1.15)}60%,90%{opacity:1;transform:scale(1)}98%,100%{opacity:0;transform:scale(.3)}}
+@keyframes popQ{0%{opacity:0;transform:scale(.2)}8%{opacity:1;transform:scale(1.15)}14%,50%{opacity:1;transform:scale(1)}60%,100%{opacity:0;transform:scale(.6)}}
+@keyframes sweep{from{transform:translateX(0)}to{transform:translateX(500px)}}
+@keyframes tickLit{0%{stroke:rgba(20,33,61,.16)}2%{stroke:rgb(14,159,142);stroke-width:8}14%,100%{stroke:rgba(20,33,61,.16);stroke-width:5}}
+@keyframes nightFade{0%,18%{opacity:0}38%,62%{opacity:1}82%,100%{opacity:0}}
+@keyframes dashrun{from{stroke-dashoffset:0}to{stroke-dashoffset:-460}}
+@keyframes radar{0%{opacity:.7;transform:scale(.4)}100%{opacity:0;transform:scale(2.1)}}
+@keyframes sigIn{from{opacity:0;transform:scaleY(0)}to{opacity:1;transform:none}}
+@keyframes shake{0%,70%,100%{transform:rotate(0)}74%{transform:rotate(-6deg)}78%{transform:rotate(6deg)}82%{transform:rotate(-4deg)}86%{transform:rotate(3deg)}}
+@keyframes sway{from{transform:rotate(-4.5deg)}to{transform:rotate(4.5deg)}}
+@keyframes swayc{from{transform:rotate(4.5deg)}to{transform:rotate(-4.5deg)}}
+@keyframes fall{0%{opacity:0;transform:translateY(-60px) rotate(0)}8%{opacity:1}100%{opacity:1;transform:translateY(560px) rotate(540deg)}}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001s!important;animation-iteration-count:1!important;animation-delay:0s!important;transition-duration:.001s!important}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <clipPath id="clipCard"><rect width="520" height="520" rx="40"/></clipPath>
+  <clipPath id="clipC7"><circle cx="260" cy="260" r="150"/></clipPath>
+</defs></svg>
+
+<div class="blob b1" id="bl1"></div><div class="blob b2" id="bl2"></div><div class="blob b3" id="bl3"></div>
+
+<div id="viewport">
+<div id="stage" data-i="0" data-dir="fwd">
+  <div class="hdr"><span>The Role of AI in Modern Education</span><span>Conference</span></div>
+
+  <!-- 1 Title -->
+  <section class="slide active" id="s1" aria-label="Title">
+    <div class="col">
+      <div class="eyebrow rv" style="--d:100">Conference</div>
+      <h1 aria-label="The Role of Artificial Intelligence in Modern Education">
+        <span class="wd"><span style="--i:0">The</span></span><span class="wd"><span style="--i:1">Role</span></span><span class="wd"><span style="--i:2">of</span></span>
+        <span class="wd"><span class="hl" style="--i:3">Artificial</span></span>
+        <span class="wd"><span class="hl" style="--i:4">Intelligence</span></span><span class="wd"><span style="--i:5">in</span></span>
+        <span class="wd"><span style="--i:6">Modern</span></span><span class="wd"><span style="--i:7">Education</span></span>
+      </h1>
+      <div class="rule rv" style="--d:900"></div>
+      <div class="by rv" style="--d:1050">Presented by: <b>Vijayalakshmi K</b><span>Department of Computer Science &amp; Engineering</span></div>
+    </div>
+    <div class="viz" aria-hidden="true">
+      <svg viewBox="0 0 520 520"><g class="frame"><g clip-path="url(#clipCard)">
+        <rect width="520" height="520" fill="#fff"/><rect class="bd" width="520" height="520"/>
+        <circle class="bd2" cx="420" cy="90" r="140"/><circle class="bd2" cx="40" cy="480" r="120"/>
+        <path class="flowp" d="M232 212C170 250 150 300 150 346"/><path class="flowp" d="M288 212C350 250 372 290 382 354"/>
+        <g class="orbit"><circle cx="260" cy="170" r="76" fill="none" stroke="rgba(var(--rgb),.4)" stroke-width="1.5" stroke-dasharray="3 7"/>
+          <path class="sparkle" d="M336 170l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/><circle cx="184" cy="170" r="5" fill="rgb(var(--blue))"/><circle cx="260" cy="94" r="4" fill="rgb(var(--coral))"/></g>
+        <g class="orb tb"><circle cx="260" cy="170" r="62" fill="rgba(var(--rgb),.1)"/><circle cx="260" cy="170" r="50" fill="rgba(var(--rgb),.2)"/><circle cx="260" cy="170" r="38" fill="var(--acc)"/>
+          <text x="260" y="182" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-weight="800" font-size="34" fill="#fff">AI</text></g>
+        <g class="ppl" data-x="6" data-y="296" data-s="1.15" data-skin="#E8B796" data-hair="#3A2A22" data-style="bun" data-shirt="#0E9F8E" data-glasses="1" data-wave="1" data-talk="1" data-pd="0"></g>
+        <g class="ppl" data-x="292" data-y="306" data-s="1.05" data-skin="#B97A56" data-hair="#1E1A1A" data-style="short" data-shirt="#F0A014" data-pd="2"></g>
+      </g></g></svg>
+    </div>
+  </section>
+
+  <!-- 2 Introduction -->
+  <section class="slide s-blue" id="s2" aria-label="Introduction">
+    <div class="col">
+      <h2 class="rv">Introduction</h2>
+      <ul class="pts">
+        <li class="rv" style="--d:420">Artificial Intelligence (AI) is rapidly changing education.</li>
+        <li class="rv" style="--d:560">AI tools support both teachers and students.</li>
+        <li class="rv" style="--d:700">It can make learning more personalized and interactive.</li>
+        <li class="rv" style="--d:840">Examples include AI tutors, chatbots, and automated assessment.</li>
+      </ul>
+    </div>
+    <div class="viz" aria-hidden="true">
+      <svg viewBox="0 0 520 520"><g class="frame"><g clip-path="url(#clipCard)">
+        <rect width="520" height="520" fill="#fff"/><rect class="bd" width="520" height="520"/><circle class="bd2" cx="450" cy="470" r="150"/>
+        <g class="bob" style="--b:0"><circle class="chipsh" cx="86" cy="80" r="30"/><circle class="chip" cx="86" cy="74" r="30"/>
+          <g class="ico" transform="translate(86 74)"><circle cx="0" cy="-7" r="6"/><path d="M-12 13a12 12 0 0 1 24 0"/></g></g>
+        <g class="bob" style="--b:1.3"><circle class="chipsh" cx="170" cy="62" r="30"/><circle class="chip" cx="170" cy="56" r="30"/>
+          <g class="ico" transform="translate(170 56)"><rect x="-13" y="-11" width="26" height="18" rx="5"/><path d="M-4 7l-3 7 9-7"/><circle cx="-6" cy="-2" r="1.6"/><circle cx="0" cy="-2" r="1.6"/><circle cx="6" cy="-2" r="1.6"/></g></g>
+        <g class="bob" style="--b:2.4"><circle class="chipsh" cx="254" cy="82" r="30"/><circle class="chip" cx="254" cy="76" r="30"/>
+          <g class="ico" transform="translate(254 76)"><rect x="-11" y="-14" width="22" height="28" rx="3"/><path d="M-6 0l4 4 8-8"/></g></g>
+        <g class="pop" style="--d2:0.3"><rect x="290" y="150" width="190" height="56" rx="22" fill="#fff" stroke="var(--line)" stroke-width="1.5"/>
+          <circle class="dotb" style="--j:0" cx="340" cy="178" r="6"/><circle class="dotb" style="--j:1" cx="360" cy="178" r="6"/><circle class="dotb" style="--j:2" cx="380" cy="178" r="6"/></g>
+        <g class="pop" style="--d2:1.8"><rect x="270" y="226" width="210" height="92" rx="24" fill="var(--acc)"/>
+          <rect class="txl" x="292" y="248" width="150" height="9" rx="4.5" style="fill:rgba(255,255,255,.9)"/><rect x="292" y="270" width="120" height="9" rx="4.5" style="fill:rgba(255,255,255,.75)"/><rect x="292" y="292" width="90" height="9" rx="4.5" style="fill:rgba(255,255,255,.6)"/></g>
+        <g class="pop" style="--d2:3.6"><rect x="300" y="338" width="180" height="58" rx="22" fill="#fff" stroke="var(--line)" stroke-width="1.5"/>
+          <circle cx="332" cy="367" r="14" fill="rgba(var(--rgb),.18)"/><path class="ck" style="stroke-dashoffset:0;--j:0;animation:none" d="M325 367l5 5 9-11"/><rect class="txl" x="356" y="361" width="96" height="9" rx="4.5"/></g>
+        <g class="ppl" data-x="30" data-y="290" data-s="1.15" data-skin="#D9A27E" data-hair="#2A1C16" data-style="curly" data-shirt="#3466FF" data-pd="1"></g>
+        <g><rect class="lap" x="66" y="446" width="176" height="110" rx="12"/><circle cx="154" cy="500" r="9" fill="rgba(var(--rgb),.55)"/></g>
+      </g></g></svg>
+    </div>
+  </section>
+
+  <!-- 3 Objectives -->
+  <section class="slide s-amber" id="s3" aria-label="Objectives">
+    <div class="col">
+      <h2 class="rv">Objectives</h2>
+      <ul class="pts">
+        <li class="rv" style="--d:420">To understand the role of AI in education.</li>
+        <li class="rv" style="--d:560">To identify common applications of AI.</li>
+        <li class="rv" style="--d:700">To study the benefits of AI-based learning.</li>
+        <li class="rv" style="--d:840">To understand challenges and responsible use of AI.</li>
+      </ul>
+    </div>
+    <div class="viz" aria-hidden="true">
+      <svg viewBox="0 0 520 520"><g class="frame"><g clip-path="url(#clipCard)">
+        <rect width="520" height="520" fill="#fff"/><rect class="bd" width="520" height="520"/><circle class="bd2" cx="60" cy="60" r="120"/>
+        <circle class="rg" style="--r:0;fill:rgba(240,160,20,.14);stroke:rgba(240,160,20,.7);stroke-width:2" cx="350" cy="190" r="122"/>
+        <circle class="rg" style="--r:1;fill:rgba(240,160,20,.22);stroke:rgba(240,160,20,.8);stroke-width:2" cx="350" cy="190" r="88"/>
+        <circle class="rg" style="--r:2;fill:rgba(240,160,20,.36);stroke:rgba(240,160,20,.9);stroke-width:2" cx="350" cy="190" r="54"/>
+        <circle class="rg" style="--r:3;fill:rgb(240,160,20)" cx="350" cy="190" r="22"/>
+        <circle class="hit tb" cx="350" cy="190" r="16" fill="none" stroke="rgb(240,160,20)" stroke-width="4"/>
+        <g class="arrow"><line x1="238" y1="302" x2="350" y2="190" stroke="#14213D" stroke-width="6" stroke-linecap="round"/>
+          <polygon points="241,299 268,272 279,283 247,316" fill="rgb(240,103,92)"/><polygon points="241,299 268,272 257,261 224,293" fill="#D9483E"/><circle cx="238" cy="302" r="5" fill="#14213D"/><circle cx="350" cy="190" r="6" fill="#14213D" stroke="#fff" stroke-width="2"/></g>
+        <g class="ppl" data-x="6" data-y="300" data-s="1.15" data-skin="#F1C7A5" data-hair="#5A3A22" data-style="long" data-shirt="#F0A014" data-wave="1" data-pd="0.5"></g>
+        <g class="bob" style="--b:0.5"><rect x="400" y="380" width="96" height="70" rx="10" fill="#FFF3B8" stroke="rgba(240,160,20,.5)" stroke-width="1.5"/><path class="ck" style="stroke-dashoffset:0;animation:none;stroke:#14213D" d="M418 414l10 10 20-24"/><rect x="456" y="406" width="26" height="6" rx="3" fill="rgba(20,33,61,.3)"/><rect x="456" y="420" width="18" height="6" rx="3" fill="rgba(20,33,61,.3)"/></g>
+      </g></g></svg>
+    </div>
+  </section>
+
+  <!-- 4 Applications -->
+  <section class="slide s4" id="s4" aria-label="Applications of AI in Education">
+    <div class="head">
+      <div class="col"><h2 class="rv">Applications of AI in Education</h2></div>
+      <div class="peek rv" style="--d:300" aria-hidden="true"><svg viewBox="-10 0 220 200" width="100%" height="100%"><g class="ppl" data-x="0" data-y="0" data-s=".88" data-skin="#C98F6B" data-hair="#1E1A1A" data-style="short" data-shirt="#0E9F8E" data-wave="1" data-glasses="1" data-pd="1"></g></svg></div>
+    </div>
+    <ul class="cards">
+      <li class="card rv" style="--d:420"><div class="icw">
+        <svg class="ic" viewBox="0 0 96 96" aria-hidden="true"><g class="st"><line x1="16" y1="28" x2="80" y2="28"/><line x1="16" y1="48" x2="80" y2="48"/><line x1="16" y1="68" x2="80" y2="68"/></g><circle class="k k1" cx="34" cy="28" r="7"/><circle class="k k2" cx="52" cy="48" r="7"/><circle class="k k3" cx="40" cy="68" r="7"/></svg></div>
+        <p>Personalized learning based on student needs.</p></li>
+      <li class="card rv" style="--d:540"><div class="icw">
+        <svg class="ic" viewBox="0 0 96 96" aria-hidden="true"><path class="accs" d="M16 20h56a8 8 0 0 1 8 8v28a8 8 0 0 1-8 8H44L28 78V64h-12a8 8 0 0 1-8-8V28a8 8 0 0 1 8-8z"/><circle class="bounce" style="--j:0" cx="30" cy="42" r="4.5"/><circle class="bounce" style="--j:1" cx="44" cy="42" r="4.5"/><circle class="bounce" style="--j:2" cx="58" cy="42" r="4.5"/></svg></div>
+        <p>AI chatbots for answering common questions.</p></li>
+      <li class="card rv" style="--d:660"><div class="icw">
+        <svg class="ic" viewBox="0 0 96 96" aria-hidden="true"><g class="accs"><rect x="12" y="16" width="18" height="18" rx="4"/><rect x="12" y="40" width="18" height="18" rx="4"/><rect x="12" y="64" width="18" height="18" rx="4"/></g><g class="st"><line x1="42" y1="25" x2="84" y2="25"/><line x1="42" y1="49" x2="84" y2="49"/><line x1="42" y1="73" x2="84" y2="73"/></g><path class="ck" style="--j:0" d="M16 25l5 5 8-10"/><path class="ck" style="--j:1" d="M16 49l5 5 8-10"/><path class="ck" style="--j:2" d="M16 73l5 5 8-10"/></svg></div>
+        <p>Automated quizzes and assessment.</p></li>
+      <li class="card rv" style="--d:780"><div class="icw">
+        <svg class="ic" viewBox="0 0 96 96" aria-hidden="true"><rect class="accs" x="14" y="10" width="52" height="72" rx="7"/><line class="wl" style="--j:0" x1="24" y1="30" x2="56" y2="30"/><line class="wl" style="--j:1" x1="24" y1="44" x2="56" y2="44"/><line class="wl" style="--j:2" x1="24" y1="58" x2="46" y2="58"/><path class="sparkle" d="M74 28l3.5 10 10 3.5-10 3.5L74 55l-3.5-10-10-3.5 10-3.5z"/></svg></div>
+        <p>Content and study-material generation.</p></li>
+      <li class="card rv" style="--d:900"><div class="icw">
+        <svg class="ic" viewBox="0 0 96 96" aria-hidden="true"><line class="st" x1="10" y1="80" x2="88" y2="80"/><rect class="bar" style="--j:0" x="16" y="52" width="14" height="28" rx="3"/><rect class="bar" style="--j:1" x="36" y="36" width="14" height="44" rx="3"/><rect class="bar" style="--j:2" x="56" y="44" width="14" height="36" rx="3"/><rect class="bar" style="--j:3" x="76" y="18" width="14" height="62" rx="3"/></svg></div>
+        <p>Student performance analysis.</p></li>
+    </ul>
+  </section>
+
+  <!-- 5 Students -->
+  <section class="slide s-blue" id="s5" aria-label="AI for Students">
+    <div class="col">
+      <h2 class="rv">AI for Students</h2>
+      <ul class="pts">
+        <li class="rv" style="--d:420">Provides quick learning support.</li>
+        <li class="rv" style="--d:540">Helps explain difficult concepts in simple language.</li>
+        <li class="rv" style="--d:660">Generates practice questions and summaries.</li>
+        <li class="rv" style="--d:780">Supports self-learning at any time.</li>
+        <li class="rv" style="--d:900">Can improve learning engagement when used properly.</li>
+      </ul>
+    </div>
+    <div class="viz" aria-hidden="true">
+      <svg viewBox="0 0 520 520"><g class="frame"><g clip-path="url(#clipCard)">
+        <rect width="520" height="520" fill="#fff"/><rect class="bd" width="520" height="520"/><circle class="bd2" cx="60" cy="460" r="130"/>
+        <circle cx="262" cy="236" r="7" fill="#fff" stroke="rgba(var(--rgb),.5)" stroke-width="2"/><circle cx="288" cy="206" r="10" fill="#fff" stroke="rgba(var(--rgb),.5)" stroke-width="2"/><circle cx="318" cy="172" r="14" fill="#fff" stroke="rgba(var(--rgb),.5)" stroke-width="2"/>
+        <g><path d="M300 100a34 34 0 0 1 36-34a42 42 0 0 1 78 8a36 36 0 0 1 28 56a34 34 0 0 1-26 40H334a34 34 0 0 1-34-34a30 30 0 0 1 0-36z" fill="#fff" stroke="rgba(var(--rgb),.5)" stroke-width="2"/>
+          <text class="qm tb" x="378" y="132">?</text>
+          <g class="bulb"><circle class="rays" cx="378" cy="106" r="46" fill="rgba(240,160,20,.2)"/><circle cx="378" cy="104" r="24" fill="rgb(255,206,70)"/><rect x="368" y="126" width="20" height="14" rx="4" fill="#14213D"/>
+            <g stroke="rgb(240,160,20)" stroke-width="4" stroke-linecap="round"><path d="M378 66v-10M345 80l-8-7M411 80l8-7M338 106h-10M418 106h10"/></g></g></g>
+        <g class="bob" style="--b:0.4"><rect x="400" y="330" width="92" height="72" rx="10" class="white"/><rect x="412" y="346" width="48" height="7" rx="3.5" class="txa"/><rect x="412" y="362" width="66" height="7" rx="3.5" class="txl"/><rect x="412" y="378" width="40" height="7" rx="3.5" class="txl"/></g>
+        <g class="bob" style="--b:1.8"><rect x="420" y="420" width="80" height="62" rx="10" class="white"/><path class="ck" style="stroke-dashoffset:0;animation:none" d="M436 452l9 9 18-20"/></g>
+        <g class="ppl" data-x="50" data-y="282" data-s="1.25" data-skin="#E8B796" data-hair="#3A2A22" data-style="long" data-shirt="#3466FF" data-pd="0.8"></g>
+        <g><rect class="lap" x="92" y="448" width="176" height="110" rx="12"/><circle cx="180" cy="500" r="9" fill="rgba(var(--rgb),.55)"/></g>
+      </g></g></svg>
+    </div>
+  </section>
+
+  <!-- 6 Teachers -->
+  <section class="slide s-amber" id="s6" aria-label="AI for Teachers">
+    <div class="col">
+      <h2 class="rv">AI for Teachers</h2>
+      <ul class="pts">
+        <li class="rv" style="--d:420">Helps prepare notes, questions, and activities.</li>
+        <li class="rv" style="--d:540">Reduces time spent on repetitive tasks.</li>
+        <li class="rv" style="--d:660">Supports basic assessment and feedback.</li>
+        <li class="rv" style="--d:780">Helps identify learning gaps.</li>
+        <li class="rv" style="--d:900">Allows teachers to focus more on students.</li>
+      </ul>
+    </div>
+    <div class="viz" aria-hidden="true">
+      <svg viewBox="0 0 520 520"><g class="frame"><g clip-path="url(#clipCard)">
+        <rect width="520" height="520" fill="#fff"/><rect class="bd" width="520" height="520"/>
+        <g id="classroom"></g>
+        <g class="beamg"><rect class="beamr" x="-50" y="36" width="60" height="280"/><rect class="beaml" x="8" y="36" width="3" height="280"/></g>
+        <g class="bob" style="--b:0"><rect x="258" y="352" width="226" height="130" rx="16" class="white"/>
+          <rect class="bar" style="--j:0" x="282" y="410" width="22" height="48" rx="4"/><rect class="bar" style="--j:1" x="316" y="388" width="22" height="70" rx="4"/>
+          <rect class="bar" style="--j:2;fill:rgb(240,103,92)" x="350" y="428" width="22" height="30" rx="4"/><rect class="bar" style="--j:3" x="384" y="380" width="22" height="78" rx="4"/><rect class="bar" style="--j:4" x="418" y="396" width="22" height="62" rx="4"/>
+          <rect x="282" y="368" width="70" height="8" rx="4" class="txa"/></g>
+        <g class="ppl" data-x="-12" data-y="318" data-s="1.05" data-skin="#C98F6B" data-hair="#2A2220" data-style="short" data-shirt="#F0A014" data-glasses="1" data-beard="1" data-talk="1" data-pd="0"></g>
+      </g></g></svg>
+    </div>
+  </section>
+
+  <!-- 7 Benefits -->
+  <section class="slide" id="s7" aria-label="Benefits of AI in Education">
+    <div class="col">
+      <h2 class="rv">Benefits of AI in Education</h2>
+      <ul class="pts">
+        <li class="rv" style="--d:420">Personalized learning experience.</li>
+        <li class="rv" style="--d:540">24/7 learning assistance.</li>
+        <li class="rv" style="--d:660">Saves time for teachers and students.</li>
+        <li class="rv" style="--d:780">Interactive and engaging learning.</li>
+        <li class="rv" style="--d:900">Supports large numbers of learners.</li>
+      </ul>
+    </div>
+    <div class="viz" aria-hidden="true">
+      <svg viewBox="0 0 520 520" id="clock"><g class="frame">
+        <circle cx="260" cy="260" r="158" fill="#fff"/>
+        <g clip-path="url(#clipC7)">
+          <rect x="100" y="100" width="320" height="320" fill="#BFE3FF"/>
+          <rect class="night" x="100" y="100" width="320" height="320" fill="#1B2748"/>
+          <g class="stars" fill="#fff"><circle class="twk tb" style="--b:0" cx="170" cy="170" r="2.5"/><circle class="twk tb" style="--b:1" cx="330" cy="150" r="3"/><circle class="twk tb" style="--b:2" cx="380" cy="230" r="2.5"/><circle class="twk tb" style="--b:0.5" cx="140" cy="250" r="2"/><circle class="twk tb" style="--b:1.6" cx="250" cy="130" r="2.5"/></g>
+          <g class="skyspin"><circle cx="260" cy="140" r="30" fill="rgba(255,206,70,.35)"/><circle cx="260" cy="140" r="21" fill="rgb(255,196,48)"/><circle cx="260" cy="380" r="19" fill="#F4F1D8"/><circle cx="252" cy="374" r="4" fill="rgba(20,33,61,.12)"/><circle cx="268" cy="388" r="3" fill="rgba(20,33,61,.12)"/></g>
+          <path d="M100 370Q190 332 260 360T420 352V430H100Z" fill="rgba(14,159,142,.5)"/>
+          <g class="ppl" data-x="164" data-y="288" data-s=".96" data-skin="#D9A27E" data-hair="#1E1A1A" data-style="short" data-shirt="#14213D" data-pd="0.4"></g>
+        </g>
+        <circle cx="260" cy="260" r="152" fill="none" stroke="#fff" stroke-width="8"/>
+        <rect x="196" y="430" width="128" height="46" rx="23" fill="#14213D"/>
+        <text x="260" y="461" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-weight="800" font-size="26" fill="#fff">24/7</text>
+      </g></svg>
+    </div>
+  </section>
+
+  <!-- 8 Challenges -->
+  <section class="slide s-coral" id="s8" aria-label="Challenges and Limitations">
+    <div class="col">
+      <h2 class="rv">Challenges and Limitations</h2>
+      <ul class="pts">
+        <li class="rv" style="--d:420">AI may provide incorrect information.</li>
+        <li class="rv" style="--d:540">Privacy and data security are important.</li>
+        <li class="rv" style="--d:660">Students may become over-dependent on AI.</li>
+        <li class="rv" style="--d:780">Digital access may not be equal for everyone.</li>
+        <li class="rv" style="--d:900">Human supervision is still necessary.</li>
+      </ul>
+    </div>
+    <div class="viz" aria-hidden="true">
+      <svg viewBox="0 0 520 520"><g class="frame"><g clip-path="url(#clipCard)">
+        <rect width="520" height="520" fill="#fff"/><rect class="bd" width="520" height="520"/><circle class="bd2" cx="470" cy="60" r="120"/>
+        <g transform="translate(396 250) scale(.52) translate(-260 -265)">
+          <circle class="pulse" style="--j:0" cx="260" cy="265" r="170"/><circle class="pulse" style="--j:1" cx="260" cy="265" r="170"/><circle class="pulse" style="--j:2" cx="260" cy="265" r="170"/>
+          <path class="shield" d="M260 70L420 130V250C420 350 350 420 260 460C170 420 100 350 100 250V130Z"/>
+          <path class="scan" pathLength="460" d="M260 70L420 130V250C420 350 350 420 260 460C170 420 100 350 100 250V130Z"/>
+          <path d="M225 240h70a10 10 0 0 1 10 10v50a10 10 0 0 1-10 10h-70a10 10 0 0 1-10-10v-50a10 10 0 0 1 10-10z" fill="#14213D"/>
+          <path d="M238 240v-20a22 22 0 0 1 44 0v20" fill="none" stroke="#14213D" stroke-width="8" stroke-linecap="round"/>
+          <circle cx="260" cy="268" r="8" fill="#fff"/><line x1="260" y1="272" x2="260" y2="290" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+        </g>
+        <rect class="sig" style="--j:0" x="340" y="480" width="14" height="14" rx="2"/><rect class="sig" style="--j:1" x="366" y="468" width="14" height="26" rx="2"/><rect class="sig" style="--j:2" x="392" y="456" width="14" height="38" rx="2"/><rect class="sig off" style="--j:3" x="418" y="444" width="14" height="50" rx="2"/><rect class="sig off" style="--j:4" x="444" y="432" width="14" height="62" rx="2"/>
+        <g class="warn"><path d="M212 196l36 62h-72z" fill="rgb(240,103,92)" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><line x1="212" y1="214" x2="212" y2="236" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="212" cy="246" r="3.2" fill="#fff"/></g>
+        <g class="ppl" data-x="14" data-y="290" data-s="1.2" data-skin="#F1C7A5" data-hair="#5A3A22" data-style="short" data-shirt="#F0675C" data-mood="worry" data-pd="1.2"></g>
+        <g><rect class="lap" x="50" y="450" width="176" height="110" rx="12"/><circle cx="138" cy="502" r="9" fill="rgba(var(--rgb),.55)"/></g>
+      </g></g></svg>
+    </div>
+  </section>
+
+  <!-- 9 Responsible Use -->
+  <section class="slide s-blue" id="s9" aria-label="Responsible Use of AI">
+    <div class="col">
+      <h2 class="rv">Responsible Use of AI</h2>
+      <ul class="pts">
+        <li class="rv" style="--d:420">Use AI as a supporting tool, not as a replacement for teachers.</li>
+        <li class="rv" style="--d:540">Verify important information before using it.</li>
+        <li class="rv" style="--d:660">Protect student and institutional data.</li>
+        <li class="rv" style="--d:780">Encourage original thinking and learning.</li>
+        <li class="rv" style="--d:900">Maintain a balance between technology and human guidance.</li>
+      </ul>
+    </div>
+    <div class="viz" aria-hidden="true">
+      <svg viewBox="0 0 520 520"><g class="frame"><g clip-path="url(#clipCard)">
+        <rect width="520" height="520" fill="#fff"/><rect class="bd" width="520" height="520"/>
+        <g transform="translate(88 10) scale(.68)">
+          <rect x="178" y="466" width="164" height="16" rx="8" fill="rgba(20,33,61,.3)"/>
+          <line class="metal" x1="260" y1="150" x2="260" y2="466"/>
+          <g class="beamg2">
+            <line class="metal" x1="80" y1="150" x2="440" y2="150"/>
+            <g class="panL"><path class="thin" d="M80 150L28 262M80 150L132 262"/><path class="pan" d="M22 262H138C138 308 22 308 22 262Z"/>
+              <g class="ico" style="stroke-width:4" transform="translate(80 228)"><rect x="-16" y="-16" width="32" height="32" rx="5"/><rect x="-7" y="-7" width="14" height="14" rx="2"/><path d="M-8 -16v-7M0 -16v-7M8 -16v-7M-8 16v7M0 16v7M8 16v7"/></g></g>
+            <g class="panR"><path class="thin" d="M440 150L388 262M440 150L492 262"/><path class="pan" d="M382 262H498C498 308 382 308 382 262Z"/>
+              <g class="ico" style="stroke-width:4" transform="translate(440 228)"><circle cx="0" cy="-12" r="9"/><path d="M-18 20a18 18 0 0 1 36 0"/></g></g>
+          </g>
+          <circle cx="260" cy="150" r="14" fill="rgb(240,160,20)"/><circle cx="260" cy="150" r="5" fill="#fff"/>
+        </g>
+        <g class="ppl" data-x="-14" data-y="322" data-s=".98" data-skin="#E8B796" data-hair="#3A2A22" data-style="bun" data-shirt="#0E9F8E" data-glasses="1" data-pd="0.3"></g>
+        <g class="ppl" data-x="330" data-y="330" data-s=".95" data-skin="#B97A56" data-hair="#1E1A1A" data-style="short" data-shirt="#F0A014" data-pd="2.1"></g>
+      </g></g></svg>
+    </div>
+  </section>
+
+  <!-- 10 Conclusion / Thank You -->
+  <section class="slide s10" id="s10" aria-label="Conclusion and Thank You">
+    <div class="col">
+      <h2 class="rv">Conclusion</h2>
+      <ul class="pts">
+        <li class="rv" style="--d:420">AI has significant potential to improve education.</li>
+        <li class="rv" style="--d:540">It can support personalized learning and reduce repetitive work.</li>
+        <li class="rv" style="--d:660">Its limitations and ethical concerns must be considered.</li>
+        <li class="rv" style="--d:780">Responsible use with teacher guidance can make learning more effective.</li>
+      </ul>
+    </div>
+    <div class="thanks viz" aria-hidden="true">
+      <svg viewBox="0 0 520 520">
+        <g id="confetti"></g>
+        <g class="ppl" data-x="-6" data-y="372" data-s=".62" data-skin="#E8B796" data-hair="#3A2A22" data-style="bun" data-shirt="#0E9F8E" data-wave="1" data-pd="0"></g>
+        <g class="ppl" data-x="92" data-y="384" data-s=".6" data-skin="#B97A56" data-hair="#1E1A1A" data-style="short" data-shirt="#F0A014" data-pd="1"></g>
+        <g class="ppl" data-x="188" data-y="366" data-s=".66" data-skin="#C98F6B" data-hair="#2A2220" data-style="short" data-shirt="#14213D" data-beard="1" data-glasses="1" data-wave="1" data-pd="2"></g>
+        <g class="ppl" data-x="290" data-y="384" data-s=".6" data-skin="#F1C7A5" data-hair="#5A3A22" data-style="long" data-shirt="#F0675C" data-pd="3"></g>
+        <g class="ppl" data-x="388" data-y="372" data-s=".62" data-skin="#D9A27E" data-hair="#2A1C16" data-style="curly" data-shirt="#3466FF" data-wave="1" data-pd="1.7"></g>
+      </svg>
+      <div class="big"><span>Thank</span><span>You</span></div>
+    </div>
+  </section>
+</div>
+</div>
+
+<div class="ui">
+  <div class="dots" id="dots" role="group" aria-label="Slides"></div>
+  <div class="ctl">
+    <span class="hint">Rotate for a larger view</span>
+    <span id="count">01 / 10</span>
+    <button id="prev" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button id="next" aria-label="Next slide"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+    <button id="fs" class="pill" aria-label="Toggle full screen"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fslabel">Full screen</span></button>
+  </div>
+</div>
+<div class="progress" id="progress"></div>
+
+<script>
+(function(){
+  var NS='http://www.w3.org/2000/svg';
+  function el(tag,attrs,parent){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+
+  /* Illustrated person: head, hair, face and shoulders in a 200 x 224 box */
+  function person(d){
+    var skin=d.skin||'#F1C7A5',hair=d.hair||'#2A2220',shirt=d.shirt||'#0E9F8E',style=d.style||'short',ink='#14213D',mini=d.mini==='1',s='';
+    if(style==='long')s+='<path d="M58 86C44 140 52 180 68 192L132 192C148 180 156 140 142 86Z" fill="'+hair+'"/>';
+    if(style==='bun')s+='<circle cx="100" cy="26" r="18" fill="'+hair+'"/>';
+    s+='<g class="body"><path d="M14 226C14 176 52 152 100 152C148 152 186 176 186 226Z" fill="'+shirt+'"/>'+
+       '<path d="M14 226C14 176 52 152 100 152" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="3"/></g>';
+    s+='<rect x="85" y="116" width="30" height="46" rx="13" fill="'+skin+'"/><path d="M85 136Q100 152 115 136L115 146Q100 160 85 146Z" fill="rgba(20,33,61,.12)"/>';
+    s+='<path d="M80 154L100 184L120 154Z" fill="'+skin+'"/>';
+    if(d.wave==='1')s+='<g class="wave"><path d="M162 204C178 192 186 170 186 142" stroke="'+shirt+'" stroke-width="26" stroke-linecap="round" fill="none"/><circle cx="186" cy="128" r="14" fill="'+skin+'"/></g>';
+    s+='<g class="head"><circle cx="64" cy="90" r="7" fill="'+skin+'"/><circle cx="136" cy="90" r="7" fill="'+skin+'"/><ellipse cx="100" cy="84" rx="36" ry="40" fill="'+skin+'"/>';
+    if(style==='curly'){[[66,64],[78,46],[100,40],[122,46],[134,64]].forEach(function(c){s+='<circle cx="'+c[0]+'" cy="'+c[1]+'" r="17" fill="'+hair+'"/>';});}
+    s+='<path d="M62 86C56 46 80 32 102 32C128 32 146 50 138 88C132 68 120 58 100 56C84 58 70 66 62 86Z" fill="'+hair+'"/>';
+    if(d.beard==='1')s+='<path d="M65 96C66 136 134 136 135 96C126 116 74 116 65 96Z" fill="'+hair+'"/>';
+    s+='<g class="eyes"><circle cx="86" cy="87" r="4.3" fill="'+ink+'"/><circle cx="114" cy="87" r="4.3" fill="'+ink+'"/><circle cx="87.4" cy="85.6" r="1.3" fill="#fff"/><circle cx="115.4" cy="85.6" r="1.3" fill="#fff"/></g>';
+    if(!mini){
+      if(d.mood==='worry')s+='<path d="M77 79L95 72M123 79L105 72" stroke="'+ink+'" stroke-opacity=".75" stroke-width="3" stroke-linecap="round"/>';
+      else s+='<path d="M77 75Q86 70 95 74M105 74Q114 70 123 75" stroke="'+ink+'" stroke-opacity=".7" stroke-width="3" stroke-linecap="round" fill="none"/>';
+      s+='<circle cx="75" cy="101" r="6.5" fill="rgba(240,103,92,.28)"/><circle cx="125" cy="101" r="6.5" fill="rgba(240,103,92,.28)"/>';
+    }
+    var mc=d.beard==='1'?'#FFF3EA':ink;
+    if(d.talk==='1')s+='<ellipse class="talk" cx="100" cy="109" rx="8.5" ry="6" fill="#8A2F3A"/>';
+    else if(d.mood==='worry')s+='<path d="M90 113Q100 105 110 113" stroke="'+mc+'" stroke-width="3.2" stroke-linecap="round" fill="none"/>';
+    else s+='<path d="M88 106Q100 118 112 106" stroke="'+mc+'" stroke-width="3.2" stroke-linecap="round" fill="none"/>';
+    if(d.glasses==='1'&&!mini)s+='<g fill="rgba(255,255,255,.28)" stroke="'+ink+'" stroke-width="2.8"><circle cx="86" cy="87" r="13"/><circle cx="114" cy="87" r="13"/><path d="M99 87h2"/></g>';
+    s+='</g>';
+    return s;
+  }
+  function buildPeople(root){
+    [].forEach.call(root.querySelectorAll('.ppl'),function(g){
+      var d=g.dataset;
+      g.setAttribute('transform','translate('+(d.x||0)+' '+(d.y||0)+') scale('+(d.s||1)+')');
+      g.style.setProperty('--pd',d.pd||0);
+      g.innerHTML=person(d);
+    });
+  }
+
+  /* Slide 6 classroom */
+  (function(){
+    var host=document.getElementById('classroom');if(!host)return;
+    var skins=['#F1C7A5','#C98F6B','#8A5A3C','#E8B796','#D9A27E','#B97A56'],hairs=['#2A2220','#5A3A22','#1E1A1A','#3A2A22','#7A4A28'],
+        shirts=['#0E9F8E','#3466FF','#F0675C','#F0A014','#8E6CF0','#14213D'],styles=['short','long','curly','bun','short','long'],
+        gaps={'2':0.8,'5':2,'10':3.2},n=0;
+    for(var r=0;r<3;r++)for(var c=0;c<4;c++){
+      var x=34+c*118,y=46+r*88,i=n++;
+      var g=el('g',{class:'ppl mini','data-x':x,'data-y':y,'data-s':.42,'data-mini':'1','data-skin':skins[(i*5)%6],'data-hair':hairs[(i*3)%5],'data-shirt':shirts[(i*7)%6],'data-style':styles[(i*5+r)%6],'data-pd':(i%5)*0.9},host);
+      if(gaps[i]!==undefined){
+        var q=el('g',{class:'gapq'},host);q.style.setProperty('--g',gaps[i]);
+        el('circle',{cx:x+42,cy:y-2,r:12,fill:'rgb(240,160,20)'},q);
+        var t=el('text',{x:x+42,y:y+4,'text-anchor':'middle','font-family':'Bricolage Grotesque,sans-serif','font-weight':'800','font-size':'16',fill:'#fff'},q);t.textContent='?';
+      }
+    }
+  })();
+
+  /* Slide 7 ticks */
+  (function(){
+    var svg=document.getElementById('clock');if(!svg)return;
+    var frame=svg.firstElementChild,first=frame.firstElementChild;
+    for(var i=0;i<24;i++){
+      var a=i*15*Math.PI/180,s=Math.sin(a),c=Math.cos(a);
+      var t=el('line',{class:'tick',x1:260+s*172,y1:260-c*172,x2:260+s*196,y2:260-c*196});
+      t.style.setProperty('--j',i);frame.insertBefore(t,first);
+    }
+  })();
+
+  /* Slide 10 confetti */
+  (function(){
+    var host=document.getElementById('confetti');if(!host)return;
+    var cols=['#0E9F8E','#3466FF','#F0A014','#F0675C','#8E6CF0'];
+    for(var i=0;i<34;i++){
+      var r=el('rect',{class:'conf',x:(i*37)%520,y:0,width:8+(i%3)*3,height:12+(i%4)*3,rx:2,fill:cols[i%5]},host);
+      r.style.setProperty('--cd',(i*0.37).toFixed(2));
+      r.style.animationDuration=(3.6+(i%5)*0.5)+'s';
+    }
+  })();
+
+  buildPeople(document);
+
+  /* Deck logic */
+  var stage=document.getElementById('stage'),slides=[].slice.call(document.querySelectorAll('.slide')),N=slides.length,cur=0;
+  var accents=['14,159,142','52,102,255','240,160,20','14,159,142','52,102,255','240,160,20','14,159,142','240,103,92','52,102,255','14,159,142'];
+  var dots=document.getElementById('dots'),count=document.getElementById('count'),prog=document.getElementById('progress'),prev=document.getElementById('prev'),next=document.getElementById('next');
+  var dotBtns=slides.map(function(s,i){var b=document.createElement('button');b.setAttribute('aria-label','Slide '+(i+1));b.addEventListener('click',function(){go(i);});dots.appendChild(b);return b;});
+  var bl=[document.getElementById('bl1'),document.getElementById('bl2'),document.getElementById('bl3')];
+  function pad(n){return (n<10?'0':'')+n;}
+  function go(n){
+    n=Math.max(0,Math.min(N-1,n));
+    if(n===cur)return;
+    stage.setAttribute('data-dir',n>cur?'fwd':'back');
+    var old=slides[cur];old.classList.remove('active');old.classList.add('leaving');
+    (function(o){setTimeout(function(){if(!o.classList.contains('active'))o.classList.remove('leaving');},1000);})(old);
+    cur=n;slides[cur].classList.remove('leaving');slides[cur].classList.add('active');
+    ui();
+    try{history.replaceState(null,'','#s'+(cur+1));}catch(e){}
+  }
+  function ui(){
+    stage.setAttribute('data-i',cur);
+    count.textContent=pad(cur+1)+' / '+pad(N);
+    prog.style.width=((cur+1)/N*100)+'%';
+    prog.style.backgroundColor='rgb('+accents[cur]+')';
+    prev.disabled=cur===0;next.disabled=cur===N-1;
+    dotBtns.forEach(function(b,i){b.setAttribute('aria-current',i===cur?'true':'false');});
+    var a=accents[(cur)%N],b2=accents[(cur+3)%N],c3=accents[(cur+6)%N];
+    bl[0].style.backgroundColor='rgba('+a+',.24)';bl[1].style.backgroundColor='rgba('+b2+',.2)';bl[2].style.backgroundColor='rgba('+c3+',.14)';
+  }
+  function fit(){
+    var s=Math.min(window.innerWidth/1280,window.innerHeight/720);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')';
+  }
+  window.addEventListener('resize',fit);fit();
+  prev.addEventListener('click',function(){go(cur-1);});
+  next.addEventListener('click',function(){go(cur+1);});
+  document.addEventListener('keydown',function(e){
+    var k=e.key;
+    if(k==='ArrowRight'||k==='ArrowDown'||k==='PageDown'||k===' '||k==='Enter'){if(document.activeElement&&document.activeElement.tagName==='BUTTON'&&(k===' '||k==='Enter'))return;e.preventDefault();go(cur+1);}
+    else if(k==='ArrowLeft'||k==='ArrowUp'||k==='PageUp'){e.preventDefault();go(cur-1);}
+    else if(k==='Home'){go(0);}else if(k==='End'){go(N-1);}
+    else if(k==='f'||k==='F'){goFull();}
+  });
+  function toggleFs(){
+    try{
+      if(document.fullscreenElement){document.exitFullscreen();}
+      else if(document.documentElement.requestFullscreen){var p=document.documentElement.requestFullscreen();if(p&&p.catch)p.catch(function(){});}
+    }catch(e){}
+  }
+  var fsLabel=document.getElementById('fslabel'),toastEl=null,toastT;
+  function note(){
+    if(!toastEl){toastEl=document.createElement('div');toastEl.className='toast';toastEl.setAttribute('role','status');document.body.appendChild(toastEl);}
+    toastEl.textContent='Full screen is blocked in this view. Open the page in its own browser tab and try again.';
+    toastEl.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){toastEl.hidden=true;},4500);
+  }
+  function goFull(){
+    var d=document,e=d.documentElement,on=d.fullscreenElement||d.webkitFullscreenElement,p;
+    try{
+      if(on){p=(d.exitFullscreen||d.webkitExitFullscreen).call(d);}
+      else{var rq=e.requestFullscreen||e.webkitRequestFullscreen;if(!rq){note();return;}p=rq.call(e);}
+      if(p&&p.catch)p.catch(note);
+    }catch(err){note();}
+  }
+  ['fullscreenchange','webkitfullscreenchange'].forEach(function(ev){document.addEventListener(ev,function(){
+    var on=!!(document.fullscreenElement||document.webkitFullscreenElement);
+    fsLabel.textContent=on?'Exit full screen':'Full screen';fit();
+  });});
+  document.getElementById('fs').addEventListener('click',goFull);
+  var sx=null;
+  document.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;},{passive:true});
+  document.addEventListener('touchend',function(e){if(sx===null)return;var dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>50)go(cur+(dx<0?1:-1));sx=null;},{passive:true});
+  var idleT;function wake(){document.body.classList.remove('idle');clearTimeout(idleT);idleT=setTimeout(function(){document.body.classList.add('idle');},2800);}
+  ['pointermove','pointerdown','keydown'].forEach(function(ev){document.addEventListener(ev,wake);});wake();
+
+  var m=/^#s(\d+)$/.exec(location.hash||'');
+  if(m){var t=parseInt(m[1],10)-1;if(t>0&&t<N){slides[0].classList.remove('active');cur=t;slides[cur].classList.add('active');}}
+  ui();
+})();
+</script>
+
+</body></html>
